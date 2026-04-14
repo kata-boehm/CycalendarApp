@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cycle Calendar</title>
+<link rel="icon" type="image/png" href="icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --rose: #c97d8c;
+    --rose-light: #e8b4bf;
+    --rose-pale: #f5e6ea;
+    --burgundy: #7a3d4c;
+    --cream: #fdf6f0;
+    --warm-white: #fffaf7;
+    --text: #2d1a20;
+    --muted: #9a7a82;
+    --menstrual: #c0405a;
+    --follicular: #e8956d;
+    --ovulation: #d4a843;
+    --luteal-high: #7a8fb5;
+    --luteal-low: #9b7db5;
+    --menstrual-bg: #fde8ec;
+    --follicular-bg: #fdf0ea;
+    --ovulation-bg: #fdf5e0;
+    --luteal-high-bg: #eaecf5;
+    --luteal-low-bg: #f0eaf5;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -200px; right: -200px;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #f0c8d4 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -150px; left: -150px;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #d4c8f0 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 640px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .moon {
+    display: block;
+    margin: 0 auto 1rem;
+    width: 54px;
+    height: 54px;
+    rotate: -30deg;
+    animation: moonFloat 4s ease-in-out infinite;
+  }
+
+  @keyframes moonFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.4rem, 6vw, 3.4rem);
+    font-weight: 300;
+    color: var(--burgundy);
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+
+  h1 em { font-style: italic; color: var(--rose); }
+
+  .subtitle {
+    margin-top: 0.6rem;
+    font-size: 0.9rem;
+    color: var(--muted);
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* ── Tabs ── */
+  .tab-bar {
+    display: flex;
+    gap: 0.25rem;
+    background: rgba(201, 125, 140, 0.08);
+    border-radius: 14px;
+    padding: 0.3rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 0.65rem 0.5rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--muted);
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    letter-spacing: 0.01em;
+  }
+
+  .tab-btn.active {
+    background: var(--warm-white);
+    color: var(--burgundy);
+    box-shadow: 0 1px 6px rgba(122, 61, 76, 0.1);
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Main card ── */
+  .card {
+    background: var(--warm-white);
+    border-radius: 24px;
+    padding: 2.5rem;
+    box-shadow: 0 4px 40px rgba(122, 61, 76, 0.08), 0 1px 4px rgba(122, 61, 76, 0.04);
+    border: 1px solid rgba(201, 125, 140, 0.12);
+  }
+
+  .form-section { margin-bottom: 2rem; }
+
+  label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.6rem;
+  }
+
+  input[type="number"], input[type="date"] {
+    width: 100%;
+    padding: 0.85rem 1.1rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--text);
+    background: var(--cream);
+    border: 1.5px solid rgba(201, 125, 140, 0.25);
+    border-radius: 12px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  input[type="number"]:focus, input[type="date"]:focus {
+    border-color: var(--rose);
+    box-shadow: 0 0 0 3px rgba(201, 125, 140, 0.12);
+  }
+
+  .hint {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 0.4rem;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  /* 5-phase legend */
+  .phase-legend {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    margin: 1.8rem 0;
+  }
+
+  .phase-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 400;
+    min-width: 0;
+  }
+
+  .phase-pill.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .phase-pill .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .phase-pill .label-text {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .phase-pill .days {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .pill-menstrual   { background: var(--menstrual-bg);   color: var(--menstrual); }
+  .pill-follicular  { background: var(--follicular-bg);  color: #b06030; }
+  .pill-ovulation   { background: var(--ovulation-bg);   color: #9a7010; }
+  .pill-luteal-high { background: var(--luteal-high-bg); color: #3d4d7a; }
+  .pill-luteal-low  { background: var(--luteal-low-bg);  color: #5a3d7a; }
+
+  .dot-menstrual   { background: var(--menstrual); }
+  .dot-follicular  { background: var(--follicular); }
+  .dot-ovulation   { background: var(--ovulation); }
+  .dot-luteal-high { background: var(--luteal-high); }
+  .dot-luteal-low  { background: var(--luteal-low); }
+
+  .cycles-option {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .cycles-option label {
+    margin: 0;
+    flex: 1;
+    font-size: 0.78rem;
+  }
+
+  .cycles-option input[type="number"] {
+    width: 80px;
+    min-width: 80px;
+    flex-shrink: 0;
+    text-align: center;
+    font-size: 1.1rem;
+    padding: 0.85rem 0.5rem;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 1rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    color: white;
+    background: linear-gradient(135deg, var(--rose) 0%, var(--burgundy) 100%);
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    min-height: 52px;
+  }
+
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(122, 61, 76, 0.3); }
+  .btn:active { transform: translateY(0); }
+
+  .btn-secondary {
+    background: var(--rose-pale);
+    color: var(--burgundy);
+    margin-top: 0.8rem;
+    box-shadow: none;
+  }
+
+  .preview { margin-top: 2rem; display: none; }
+  .preview.visible { display: block; }
+
+  .preview-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    font-weight: 400;
+    color: var(--burgundy);
+    margin-bottom: 1rem;
+    font-style: italic;
+  }
+
+  .cycle-preview {
+    border-left: 3px solid var(--rose-light);
+    padding-left: 1rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .cycle-num {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .phase-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem 0;
+    font-size: 0.88rem;
+    border-bottom: 1px solid rgba(201, 125, 140, 0.08);
+  }
+
+  .phase-row:last-child { border-bottom: none; }
+  .phase-color { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .phase-name  { font-weight: 500; min-width: 110px; }
+  .phase-dates { color: var(--muted); font-size: 0.82rem; }
+
+  .divider {
+    height: 1px;
+    background: rgba(201, 125, 140, 0.12);
+    margin: 2rem 0;
+  }
+
+  .success-msg {
+    display: none;
+    padding: 0.8rem 1rem;
+    background: #edf7f0;
+    border-radius: 10px;
+    color: #2d6b45;
+    font-size: 0.88rem;
+    margin-top: 1rem;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .success-msg.visible { display: block; }
+
+  /* ── Cycle Syncing Guide ── */
+  .guide-phase {
+    border-radius: 16px;
+    padding: 1.4rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .guide-phase-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .guide-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .guide-phase-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+
+  .guide-best {
+    font-size: 0.72rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+    opacity: 0.65;
+  }
+
+  .guide-tagline {
+    font-size: 0.88rem;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+    line-height: 1.5;
+  }
+
+  .guide-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.75;
+  }
+
+  .guide-list li {
+    padding-left: 1rem;
+    position: relative;
+  }
+
+  .guide-list li::before {
+    content: '·';
+    position: absolute;
+    left: 0.15rem;
+  }
+
+  .guide-card {
+    background: var(--warm-white);
+    border-radius: 16px;
+    padding: 1.4rem 1.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(201, 125, 140, 0.12);
+    box-shadow: 0 2px 16px rgba(122, 61, 76, 0.05);
+  }
+
+  .guide-card-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: var(--burgundy);
+    margin-bottom: 1rem;
+  }
+
+  .guide-rule-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .guide-rule-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.75rem;
+    border-radius: 10px;
+    font-size: 0.83rem;
+  }
+
+  .guide-rule-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .guide-example-text {
+    font-size: 0.88rem;
+    line-height: 1.75;
+    color: var(--text);
+  }
+
+  .guide-note {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.75;
+    padding: 1rem 1.1rem;
+    border-radius: 12px;
+    background: rgba(201, 125, 140, 0.06);
+    border-left: 3px solid var(--rose-light);
+    margin-bottom: 0.5rem;
+  }
+
+  footer {
+    text-align: center;
+    margin-top: 2rem;
+    font-size: 0.76rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* ── Mobile ── */
+  @media (max-width: 520px) {
+    body { padding: 1.2rem 0.75rem; align-items: flex-start; }
+    header { margin-bottom: 1.4rem; }
+    .card { padding: 1.4rem 1.1rem; border-radius: 18px; }
+    .guide-phase { padding: 1.2rem 1rem; }
+    .guide-card  { padding: 1.2rem 1rem; }
+    .row { grid-template-columns: 1fr; }
+    .phase-legend { grid-template-columns: 1fr; }
+    .phase-pill.full-width { grid-column: 1; }
+    .guide-rule-grid { grid-template-columns: 1fr; }
+    .cycles-option input[type="number"] {
+      width: 90px; min-width: 90px;
+      font-size: 1.2rem; padding: 0.9rem 0.5rem;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <svg class="moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 54 54" aria-hidden="true">
+      <defs>
+        <radialGradient id="moonGrd" cx="30%" cy="25%" r="70%">
+          <stop offset="0%"   stop-color="#f7e8a0"/>
+          <stop offset="45%"  stop-color="#d4a843"/>
+          <stop offset="100%" stop-color="#9a7020"/>
+        </radialGradient>
+        <mask id="cMask">
+          <circle cx="27" cy="27" r="20" fill="white"/>
+          <circle cx="34" cy="27" r="18" fill="black"/>
+        </mask>
+      </defs>
+      <circle cx="27" cy="27" r="20" fill="url(#moonGrd)" mask="url(#cMask)"/>
+    </svg>
+    <h1>Cycalendar</h1>
+    <p class="subtitle">Your cycle phases, beautifully mapped</p>
+  </header>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('calendar', this)">Calendar Download</button>
+    <button class="tab-btn" onclick="switchTab('guide', this)">Cycle Syncing Guide</button>
+  </div>
+
+  <!-- ── Tab: My Cycle ── -->
+  <div id="tab-calendar" class="tab-panel active">
+    <div class="card">
+
+      <div class="form-section">
+        <div class="row">
+          <div>
+            <label>Cycle length (days)</label>
+            <input type="number" id="cycleLength" value="24" min="21" max="45" inputmode="numeric">
+            <p class="hint">Typically 21–45 days</p>
+          </div>
+          <div>
+            <label>Period duration (days)</label>
+            <input type="number" id="periodLength" value="5" min="2" max="10" inputmode="numeric">
+            <p class="hint">Usually 2–7 days</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <label>First day of your last period</label>
+        <input type="date" id="startDate">
+      </div>
+
+      <div class="phase-legend">
+        <div class="phase-pill pill-menstrual">
+          <span class="dot dot-menstrual"></span>
+          <span class="label-text">Menstrual</span>
+          <span class="days" id="menstrualDays">days 1–5</span>
+        </div>
+        <div class="phase-pill pill-follicular">
+          <span class="dot dot-follicular"></span>
+          <span class="label-text">Follicular</span>
+          <span class="days" id="follicularDays">days 6–13</span>
+        </div>
+        <div class="phase-pill pill-ovulation">
+          <span class="dot dot-ovulation"></span>
+          <span class="label-text">Ovulation</span>
+          <span class="days" id="ovulationDays">day 14</span>
+        </div>
+        <div class="phase-pill pill-luteal-high">
+          <span class="dot dot-luteal-high"></span>
+          <span class="label-text">Luteal</span>
+          <span class="days" id="lutealHighDays">days 15–21</span>
+        </div>
+        <div class="phase-pill pill-luteal-low full-width">
+          <span class="dot dot-luteal-low"></span>
+          <span class="label-text">Luteal – Lower Energy 🌫️</span>
+          <span class="days" id="lutealLowDays">days 22–28</span>
+        </div>
+      </div>
+
+      <div class="cycles-option">
+        <label>Generate how many cycles?</label>
+        <input type="number" id="numCycles" value="1" min="1" max="24" inputmode="numeric">
+      </div>
+
+      <div class="divider"></div>
+
+      <button class="btn" onclick="previewAndDownload()">
+        <span>✦</span> Preview
+      </button>
+
+      <div class="success-msg" id="successMsg">
+        ✦ Downloaded!<br>Open <em>cycle-phases.ics</em> to import into Apple Calendar, Google Calendar, or Outlook.
+      </div>
+
+      <div class="preview" id="preview">
+        <div class="divider"></div>
+        <p class="preview-title">Your upcoming phases</p>
+        <div id="previewContent"></div>
+        <button class="btn" onclick="downloadICS()">⬇ Add to Calendar</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Tab: Cycle Syncing Guide ── -->
+  <div id="tab-guide" class="tab-panel">
+
+    <!-- Menstrual -->
+    <div class="guide-phase pill-menstrual">
+      <div class="guide-phase-header">
+        <span class="guide-dot dot-menstrual"></span>
+        <span class="guide-phase-name" style="color:var(--menstrual)">Menstrual Phase 🩸</span>
+      </div>
+      <p class="guide-best" style="color:var(--menstrual)">Best for</p>
+      <p class="guide-tagline">Rest, recovery, and lower-key plans.</p>
+      <ul class="guide-list">
+        <li>Cancel or keep light anything demanding.</li>
+        <li>Do admin cleanup, journaling, and reflection.</li>
+        <li>Gentle walks, yoga, and quiet work.</li>
+        <li>Avoid stacking lots of social events or intense workouts.</li>
+      </ul>
+    </div>
+
+    <!-- Follicular -->
+    <div class="guide-phase pill-follicular">
+      <div class="guide-phase-header">
+        <span class="guide-dot dot-follicular"></span>
+        <span class="guide-phase-name" style="color:#b06030">Follicular Phase 🌱</span>
+      </div>
+      <p class="guide-best" style="color:#b06030">Best for</p>
+      <p class="guide-tagline">Starting things and building momentum.</p>
+      <ul class="guide-list">
+        <li>Schedule brainstorming, planning, learning, and new projects.</li>
+        <li>Put workouts, creative work, and "first draft" tasks here.</li>
+        <li>Good time for networking, meetings, and trying new habits.</li>
+      </ul>
+    </div>
+
+    <!-- Ovulation -->
+    <div class="guide-phase pill-ovulation">
+      <div class="guide-phase-header">
+        <span class="guide-dot dot-ovulation"></span>
+        <span class="guide-phase-name" style="color:#9a7010">Ovulation Phase ✨</span>
+      </div>
+      <p class="guide-best" style="color:#9a7010">Best for</p>
+      <p class="guide-tagline">Visibility, connection, and high energy.</p>
+      <ul class="guide-list">
+        <li>Put presentations, interviews, dates, and important meetings here.</li>
+        <li>Great for collaborative work, launches, content recording, and big social plans.</li>
+        <li>Also a good window for harder workouts.</li>
+      </ul>
+    </div>
+
+    <!-- Luteal -->
+    <div class="guide-phase pill-luteal-high">
+      <div class="guide-phase-header">
+        <span class="guide-dot dot-luteal-high"></span>
+        <span class="guide-phase-name" style="color:#3d4d7a">Luteal Phase 🌙</span>
+      </div>
+      <p class="guide-best" style="color:#3d4d7a">Best for</p>
+      <p class="guide-tagline">Finishing, refining, and winding down.</p>
+      <ul class="guide-list">
+        <li>Schedule editing, reviewing, budgeting, organizing, and wrapping up projects.</li>
+        <li>Keep your calendar a bit lighter as energy may dip.</li>
+        <li>Favor calmer social plans, routines, and lower-intensity movement.</li>
+      </ul>
+    </div>
+
+    <!-- Luteal Lower Energy -->
+    <div class="guide-phase pill-luteal-low">
+      <div class="guide-phase-header">
+        <span class="guide-dot dot-luteal-low"></span>
+        <span class="guide-phase-name" style="color:#5a3d7a">Luteal – Lower Energy 🌫️</span>
+      </div>
+      <p class="guide-best" style="color:#5a3d7a">Best for</p>
+      <p class="guide-tagline">Being gentle with yourself.</p>
+      <ul class="guide-list">
+        <li>Energy is dipping — rest, reduce commitments, and prioritise self-care.</li>
+        <li>Avoid scheduling anything high-stakes or draining.</li>
+        <li>Simple routines and quiet time go a long way.</li>
+      </ul>
+    </div>
+
+    <!-- Simple calendar rule -->
+    <div class="guide-card">
+      <p class="guide-card-title">Simple Calendar Rule</p>
+      <div class="guide-rule-grid">
+        <div class="guide-rule-item pill-menstrual">
+          <span class="guide-rule-dot dot-menstrual"></span>
+          <span style="color:var(--menstrual)"><strong>Menstrual</strong> = Rest</span>
+        </div>
+        <div class="guide-rule-item pill-follicular">
+          <span class="guide-rule-dot dot-follicular"></span>
+          <span style="color:#b06030"><strong>Follicular</strong> = Create</span>
+        </div>
+        <div class="guide-rule-item pill-ovulation">
+          <span class="guide-rule-dot dot-ovulation"></span>
+          <span style="color:#9a7010"><strong>Ovulation</strong> = Connect</span>
+        </div>
+        <div class="guide-rule-item pill-luteal-high">
+          <span class="guide-rule-dot dot-luteal-high"></span>
+          <span style="color:#3d4d7a"><strong>Luteal</strong> = Finish</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Example week -->
+    <div class="guide-card">
+      <p class="guide-card-title">Example: Planning a Launch</p>
+      <p class="guide-example-text">
+        Place the <strong>prep work</strong> in your follicular phase, the <strong>live event</strong> in ovulatory, and the <strong>follow-up and admin</strong> in luteal. Keep your period days for recovery and low-pressure tasks.
+      </p>
+    </div>
+
+    <!-- Note -->
+    <div class="guide-note">
+      Cycle syncing is a helpful planning framework, but it's not one-size-fits-all. Adjust based on your own symptoms, cycle length, and energy patterns.
+    </div>
+
+  </div>
+
+  <footer>
+    Phase timings are estimates based on average cycle patterns.<br>
+    Every body is unique — use this as a gentle guide, not medical advice.
+
+    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(201, 125, 140, 0.15); font-size: 0.72rem; color: var(--muted); line-height: 1.8;">
+      <a href="https://kata-boehm.github.io/CycleCalenderDownload/impressum.html"
+         style="color: var(--rose); text-decoration: none;"
+         target="_blank">Impressum</a>
+      &nbsp;·&nbsp;
+      <a href="https://kata-boehm.github.io/CycleCalenderDownload/privacy_policy.html"
+         style="color: var(--rose); text-decoration: none;"
+         target="_blank">Privacy Policy</a>
+    </div>
+  </footer>
+
+</div>
+<script>
+  const pad = n => String(n).padStart(2, '0');
+
+  // Default date = today (local time)
+  const now = new Date();
+  document.getElementById('startDate').value =
+    `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+
+  ['cycleLength','periodLength'].forEach(id =>
+    document.getElementById(id).addEventListener('input', updateLegend)
+  );
+  updateLegend();
+
+  function updateLegend() {
+    const cycle  = parseInt(document.getElementById('cycleLength').value)  || 28;
+    const period = parseInt(document.getElementById('periodLength').value) || 5;
+    const ov     = Math.round(cycle - 14);
+    const lutealLowStart = cycle - 6;
+    document.getElementById('menstrualDays').textContent  = `days 1–${period}`;
+    document.getElementById('follicularDays').textContent = `days ${period+1}–${ov-1}`;
+    document.getElementById('ovulationDays').textContent  = `day ${ov}`;
+    document.getElementById('lutealHighDays').textContent = `days ${ov+1}–${lutealLowStart-1}`;
+    document.getElementById('lutealLowDays').textContent  = `days ${lutealLowStart}–${cycle}`;
+  }
+
+  function getPhases(start, cycleLen, periodLen) {
+    const ov          = Math.round(cycleLen - 14);
+    const lutealLowStart = cycleLen - 6;
+    const d = off => { const dt = new Date(start); dt.setDate(dt.getDate()+off); return dt; };
+    return [
+      {
+        name:  'Menstrual Phase 🩸',
+        color: '#c0405a',
+        start: d(0),
+        end:   d(periodLen - 1),
+        note:  'Rest and restore. Your body is releasing this cycle.',
+      },
+      {
+        name:  'Follicular Phase 🌱',
+        color: '#e8956d',
+        start: d(periodLen),
+        end:   d(ov - 2),
+        note:  'Energy rising. Great time for new projects and social plans.',
+      },
+      {
+        name:  'Ovulation Phase ✨',
+        color: '#d4a843',
+        start: d(ov - 1),
+        end:   d(ov + 1),
+        note:  'Peak energy and communication. Your most magnetic days.',
+      },
+      {
+        name:  'Luteal Phase 🌙',
+        color: '#7a8fb5',
+        start: d(ov + 2),
+        end:   d(lutealLowStart - 2),
+        note:  'Calm and grounded. Good for focused, slower-paced work.',
+      },
+      {
+        name:  'Luteal – Lower Energy 🌫️',
+        color: '#9b7db5',
+        start: d(lutealLowStart - 1),
+        end:   d(cycleLen - 1),
+        note:  'Energy dipping. Be gentle with yourself — rest, reduce commitments, and prioritise self-care.',
+      },
+    ];
+  }
+
+  function fmt(d) { return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }
+  function fmtICS(d) { return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`; }
+  function stamp()   { return new Date().toISOString().replace(/[-:.]/g,'').slice(0,15)+'Z'; }
+  function uid()     { return Math.random().toString(36).slice(2,10)+Date.now().toString(36)+'@cycle.app'; }
+
+  let icsContent = '';
+
+  function previewAndDownload() {
+    const startStr  = document.getElementById('startDate').value;
+    const cycleLen  = parseInt(document.getElementById('cycleLength').value);
+    const periodLen = parseInt(document.getElementById('periodLength').value);
+    const numCycles = parseInt(document.getElementById('numCycles').value);
+
+    if (!startStr)                                    { alert('Please enter your last period start date.'); return; }
+    if (isNaN(cycleLen)||cycleLen<21||cycleLen>45)    { alert('Cycle length should be 21–45 days.'); return; }
+    if (isNaN(periodLen)||periodLen<2||periodLen>10)  { alert('Period duration should be 2–10 days.'); return; }
+    if (isNaN(numCycles)||numCycles<1)                { alert('Please enter how many cycles to generate.'); return; }
+
+    const [y,mo,dy] = startStr.split('-').map(Number);
+    const dtstamp = stamp();
+    const lines = [
+      'BEGIN:VCALENDAR','VERSION:2.0',
+      'PRODID:-//Cycle Calendar//EN',
+      'CALSCALE:GREGORIAN','METHOD:PUBLISH',
+      'X-WR-CALNAME:My Cycle Phases',
+    ];
+
+    const previewContent = document.getElementById('previewContent');
+    previewContent.innerHTML = '';
+
+    for (let c = 0; c < numCycles; c++) {
+      const cycleStart = new Date(y, mo-1, dy + c*cycleLen);
+      const phases = getPhases(cycleStart, cycleLen, periodLen);
+
+      const block = document.createElement('div');
+      block.className = 'cycle-preview';
+      block.innerHTML = `<div class="cycle-num">Cycle ${c+1}</div>`;
+
+      phases.forEach(ph => {
+        const endNext = new Date(ph.end); endNext.setDate(endNext.getDate()+1);
+        lines.push(
+          'BEGIN:VEVENT', `UID:${uid()}`, `DTSTAMP:${dtstamp}`,
+          `DTSTART;VALUE=DATE:${fmtICS(ph.start)}`,
+          `DTEND;VALUE=DATE:${fmtICS(endNext)}`,
+          `SUMMARY:${ph.name}`, `DESCRIPTION:${ph.note}`,
+          'TRANSP:TRANSPARENT','END:VEVENT'
+        );
+        const row = document.createElement('div');
+        row.className = 'phase-row';
+        row.innerHTML = `
+          <span class="phase-color" style="background:${ph.color}"></span>
+          <span class="phase-name">${ph.name}</span>
+          <span class="phase-dates">${fmt(ph.start)} – ${fmt(ph.end)}</span>`;
+        block.appendChild(row);
+      });
+      previewContent.appendChild(block);
+    }
+
+    lines.push('END:VCALENDAR');
+    icsContent = lines.join('\r\n');
+
+    document.getElementById('preview').classList.add('visible');
+    document.getElementById('preview').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+
+  async function downloadICS() {
+    if (!icsContent) return;
+
+    const showSuccess = () => {
+      const msg = document.getElementById('successMsg');
+      msg.classList.add('visible');
+      setTimeout(() => msg.classList.remove('visible'), 5000);
+    };
+
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+      try {
+        const { Filesystem, FileOpener } = window.Capacitor.Plugins;
+
+        const result = await Filesystem.writeFile({
+          path: 'cycle-phases.ics',
+          data: icsContent,
+          directory: 'CACHE',
+          encoding: 'utf8'
+        });
+
+        await FileOpener.open({
+          filePath: result.uri,
+          contentType: 'text/calendar',
+          openWithDefault: true
+        });
+
+        showSuccess();
+      } catch (e) {
+        console.error('Capacitor ICS export failed:', e);
+        alert('Could not export the file. Please try again.');
+      }
+    } else {
+      const blob = new Blob([icsContent], {type: 'text/calendar;charset=utf-8'});
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = 'cycle-phases.ics';
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(url);
+      showSuccess();
+    }
+  }
+
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+</script>
+</body>
+</html>
