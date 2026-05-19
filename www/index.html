@@ -831,7 +831,7 @@
     if (!startStr)                                    { alert('Please enter your last period start date.'); return; }
     if (isNaN(cycleLen)||cycleLen<21||cycleLen>45)    { alert('Cycle length should be 21–45 days.'); return; }
     if (isNaN(periodLen)||periodLen<2||periodLen>10)  { alert('Period duration should be 2–10 days.'); return; }
-    if (isNaN(numCycles)||numCycles<1)                { alert('Please enter how many cycles to generate.'); return; }
+    if (isNaN(numCycles)||numCycles<1||numCycles>24)  { alert('Please enter between 1 and 24 cycles.'); return; }
 
     const [y,mo,dy] = startStr.split('-').map(Number);
     const dtstamp = stamp();

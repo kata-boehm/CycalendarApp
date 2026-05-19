@@ -4,7 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cycle Calendar</title>
-<link rel="icon" type="image/png" href="icon.png">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#c97d8c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Cycalendar">
+<link rel="apple-touch-icon" href="icon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -831,7 +837,7 @@
     if (!startStr)                                    { alert('Please enter your last period start date.'); return; }
     if (isNaN(cycleLen)||cycleLen<21||cycleLen>45)    { alert('Cycle length should be 21–45 days.'); return; }
     if (isNaN(periodLen)||periodLen<2||periodLen>10)  { alert('Period duration should be 2–10 days.'); return; }
-    if (isNaN(numCycles)||numCycles<1)                { alert('Please enter how many cycles to generate.'); return; }
+    if (isNaN(numCycles)||numCycles<1||numCycles>24)  { alert('Please enter between 1 and 24 cycles.'); return; }
 
     const [y,mo,dy] = startStr.split('-').map(Number);
     const dtstamp = stamp();
@@ -880,46 +886,17 @@
     document.getElementById('preview').scrollIntoView({behavior:'smooth',block:'start'});
   }
 
-  async function downloadICS() {
+  function downloadICS() {
     if (!icsContent) return;
-
-    const showSuccess = () => {
-      const msg = document.getElementById('successMsg');
-      msg.classList.add('visible');
-      setTimeout(() => msg.classList.remove('visible'), 5000);
-    };
-
-    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-      try {
-        const { Filesystem, FileOpener } = window.Capacitor.Plugins;
-
-        const result = await Filesystem.writeFile({
-          path: 'cycle-phases.ics',
-          data: icsContent,
-          directory: 'CACHE',
-          encoding: 'utf8'
-        });
-
-        await FileOpener.open({
-          filePath: result.uri,
-          contentType: 'text/calendar',
-          openWithDefault: true
-        });
-
-        showSuccess();
-      } catch (e) {
-        console.error('Capacitor ICS export failed:', e);
-        alert('Could not export the file. Please try again.');
-      }
-    } else {
-      const blob = new Blob([icsContent], {type: 'text/calendar;charset=utf-8'});
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href = url; a.download = 'cycle-phases.ics';
-      document.body.appendChild(a); a.click();
-      document.body.removeChild(a); URL.revokeObjectURL(url);
-      showSuccess();
-    }
+    const blob = new Blob([icsContent], {type: 'text/calendar;charset=utf-8'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'cycle-phases.ics';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+    const msg = document.getElementById('successMsg');
+    msg.classList.add('visible');
+    setTimeout(() => msg.classList.remove('visible'), 5000);
   }
 
   function switchTab(name, btn) {
@@ -927,6 +904,11 @@
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + name).classList.add('active');
     btn.classList.add('active');
+  }
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 </script>
 </body>

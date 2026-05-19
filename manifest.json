@@ -1,0 +1,19 @@
+{
+  "name": "Cycalendar",
+  "short_name": "Cycalendar",
+  "description": "Your cycle phases, beautifully mapped",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fdf6f0",
+  "theme_color": "#c97d8c",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
