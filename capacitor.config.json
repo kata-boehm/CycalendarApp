@@ -1,5 +1,5 @@
 {
-  "appId": "com.katha.cyclecalendar",
+  "appId": "com.cycalendar.app",
   "appName": "Cycle Calendar",
   "webDir": "www",
   "bundledWebRuntime": false,

@@ -1,4 +1,4 @@
-package com.katha.cyclecalendar;
+package com.cycalendar.app;
 
 import com.getcapacitor.BridgeActivity;
 

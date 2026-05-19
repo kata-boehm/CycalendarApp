@@ -2,3 +2,5 @@ node_modules/
 .venv/
 .idea/
 *.local
+release/
+.claude/
